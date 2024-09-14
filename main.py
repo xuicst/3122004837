@@ -2,6 +2,8 @@ import os
 import re
 import sys
 import jieba
+import cProfile
+import test_module
 
 from os import path
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -35,19 +37,19 @@ def calculate_similarity(orig_text, plag_text):
 
 def save_file_to_folder(folder, duplicate_rate, plag_file_path):
     # 被检测文件
-    plag_file = re.search(r'/([^/]+)$', plag_file_path).group(1)
+    plag_files = re.search(r'/([^/]+)$', plag_file_path).group(1)
 
     # 创建文件夹（如果不存在）
     folder0 = re.search(r'^(.+)/([^/]+)$', folder).group(1)
     folder1 = re.search(r'/([^/]+)$', folder).group(1)
     if not path.exists(folder0):
         os.makedirs(folder0)
-        filepath = path.join(folder0, folder1)
+        path.join(folder0, folder1)
     elif not path.exists(folder1):
         filepath = folder
         # 打开文件并写入内容
         with open(filepath, 'a', encoding='utf-8') as file:
-            file.write(f"{plag_file}的重复率为: {duplicate_rate:.2f}%\n")
+            file.write(f"{plag_files}的重复率为: {duplicate_rate:.2f}%\n")
 
 
 def main(orig_file_path, plag_file_path, output_file_path):
@@ -63,7 +65,7 @@ def main(orig_file_path, plag_file_path, output_file_path):
 if __name__ == "__main__":
     if len(sys.argv) != 4:
         print("用法: python main.py <原文文件路径> <抄袭文件路径> <输出文件路径>")
-# python main.py ./test_text_dataset/orig.txt ./test_text_dataset/orig_0.8_add.txt ./test_text_dataset/output_file.txt
+# python main.py ./text_dataset/orig.txt ./text_dataset/orig_0.8_add.txt ./text_dataset/output_file.txt
         sys.exit(1)
 
     orig_file = sys.argv[1]
@@ -71,3 +73,5 @@ if __name__ == "__main__":
     output_file = sys.argv[3]
 
     main(orig_file, plag_file, output_file)
+
+cProfile.run('calculate_similarity(orig_file, plag_file)')
