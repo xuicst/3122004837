@@ -15,3 +15,9 @@
 * 从命令行参数给出：输出的答案文件的绝对路径。
 
 注意：答案文件中输出的答案为浮点型，精确到小数点后两位。
+
+/test_text_dataset文件夹为测试文本
+
+在命令行运行主文件，`python main.py ./text_dataset/orig.txt ./text_dataset/orig_0.8_add.txt ./text_dataset/output_file.txt`
+
+output_file.txt文件为输出答案文件
