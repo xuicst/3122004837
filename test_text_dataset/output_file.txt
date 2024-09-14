@@ -1,0 +1,6 @@
+orig.txt的重复率为: 100.00%
+orig_0.8_add.txt的重复率为: 86.41%
+orig_0.8_del.txt的重复率为: 87.83%
+orig_0.8_dis_1.txt的重复率为: 96.57%
+orig_0.8_dis_10.txt的重复率为: 88.05%
+orig_0.8_dis_15.txt的重复率为: 71.33%

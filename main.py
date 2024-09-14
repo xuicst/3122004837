@@ -1,80 +1,73 @@
-import difflib
+import os
+import re
+import sys
+import jieba
 
-# 1 针对语料路径进行配置
-path = "../CheckRepeat/database/OrigCorpus/datas.txt"  # 训练语料库
-flagpath = "../CheckRepeat/database/OrigCorpus/flagdatas.txt"  # 语料标记
-
-# 2 对原始语料进行标记和简单清洗
-listset = ""  # 标记后的语料集合
-i, j = 1, 1
-with open(path, 'r', encoding='utf-8') as f:
-    for rline in f.readlines():
-        line = rline.strip().replace(" ", "")
-        if "summary" in line:
-            listset += "\n" + str(i) + "_" + line
-            i += 1  # 简介打标签
-        elif "subject" not in line:
-            listset += line
-        elif "subject" in line:
-            listset += "\n" + str(j) + "_" + line
-            j += 1  # 项目题目打标签
-
-# 3 保存标记后语料并统计标记结果
-with open(flagpath, 'w', encoding='utf-8') as f1:
-    f1.write(listset.strip())
-print("=" * 70)
-print("项目共计标题:" + str(len(listset.split("subject")) - 1))
-print("项目共计简介:" + str(len(listset.split("summary")) - 1))
-print("-" * 70)
-# 4 对标记数据进行分词处理
-cutpath = "../CheckRepeat/database/OrigCorpus/cutdatas.txt"  # 保存分词后的结果
-cutword(flagpath, cutpath)
+from os import path
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 
-def checkfun(namestr):
-    subject = {}  # 记录查重结果，键值对，原句+重复率
-    summary = {}
-    # 1 找到对比库的历史数据
-    checkpath = "../CheckRepeat/database/OrigCorpus/cutdatas.txt"  # 数据库中对比项目语料库
-    with open(checkpath, "r", encoding="utf-8") as f:
-        checklist = [line[:] for line in f.readlines()]
-    subjectname = [sub for sub in checklist if "subject" in sub]  # 项目名称
-    summaryname = [summ for summ in checklist if "summary" in summ]  # 项目简介
+def read_file(file_path):
+    with open(file_path, 'r', encoding='utf-8') as file:
+        return file.read()
 
-    if "subject" in namestr:
-        # 2 进行项目名称验证操作
-        for rline in subjectname:
-            line = ''.join(str(rline).split(' ')[2:])
-            subp = difflib.SequenceMatcher(None, namestr.split('\n')[0].replace('subject', ''), line).ratio()
-            subject[line] = float('%.4f' % (subp))
-    if "summary" in namestr:
-        # 3 进行项目简介验证操作
-        for rline in summaryname:
-            line = ''.join(str(rline).split(' ')[2:])
-            sump = difflib.SequenceMatcher(None, namestr.split('\n')[1].replace('summary', ''), line).ratio()
-            summary[line] = float('%.4f' % (sump))
 
-    # 4 打印检测结果
-    outreslut = ""
-    sort1 = sorted(subject.items(), key=lambda e: e[1], reverse=True)  # 排序
-    outreslut += "项目名称：" + "*" * 5 + "[" + namestr.split('\n')[0].replace('subject', '') + "]" + "*" * 5 + "的查重结果如下:\n\n"
-    for item in sort1[:1]:
-        if item[1] >= 0.5:
-            outreslut += ("与项目库中\t[<span style=\"color:red\">" + item[0].replace("\n", '') +
-                          "</span>]\t的相似率最高：<span style=\"color:red\">" + str(item[1]) + "</span>\n")
-        else:
-            outreslut += "<span style=\"color:green\">没有查出重复的项目简介</span>\n"
+def preprocess_text(text):
+    # 使用结巴分词对文本进行分词
+    words = jieba.cut(text)
+    return ' '.join(words)
 
-    sort2 = sorted(summary.items(), key=lambda e: e[1], reverse=True)  # 排序
-    outreslut += "\n\n项目简介：" + "*" * 5 + "[" + namestr.split('\n')[1].replace('summary', '') + "]" + "*" * 5 + "的查重结果如下：\n\n"
-    for item in sort2[:1]:
-        if item[1] >= 0.5:
-            outreslut += ("与项目库中\t[<span style=\"color:red\">" + item[0].replace("\n", '') +
-                          "</span>]\t的相似率最高：<span style=\"color:red\">" + str(item[1]) + "</span>\n")
-        else:
-            outreslut += "<span style=\"color:green\">没有查出重复的项目简介</span>\n"
 
-    # 5 写到文件里面
-    with open("../CheckRepeat/database/DealCorpus/checkout.txt", 'w', encoding='utf-8') as f:
-        f.write(outreslut)
-    print(outreslut)
+def calculate_similarity(orig_text, plag_text):
+    # 处理文本
+    orig_text = preprocess_text(orig_text)
+    plag_text = preprocess_text(plag_text)
+
+    # 使用TF-IDF向量化
+    vectorizer = TfidfVectorizer()
+    tfidf_matrix = vectorizer.fit_transform([orig_text, plag_text])
+
+    # 计算余弦相似度
+    cosine_sim = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])
+    return cosine_sim[0][0]
+
+
+def save_file_to_folder(folder, duplicate_rate, plag_file_path):
+    # 被检测文件
+    plag_file = re.search(r'/([^/]+)$', plag_file_path).group(1)
+
+    # 创建文件夹（如果不存在）
+    folder0 = re.search(r'^(.+)/([^/]+)$', folder).group(1)
+    folder1 = re.search(r'/([^/]+)$', folder).group(1)
+    if not path.exists(folder0):
+        os.makedirs(folder0)
+        filepath = path.join(folder0, folder1)
+    elif not path.exists(folder1):
+        filepath = folder
+        # 打开文件并写入内容
+        with open(filepath, 'a', encoding='utf-8') as file:
+            file.write(f"{plag_file}的重复率为: {duplicate_rate:.2f}%\n")
+
+
+def main(orig_file_path, plag_file_path, output_file_path):
+    orig_text = read_file(orig_file_path)
+    plag_text = read_file(plag_file_path)
+
+    similarity = calculate_similarity(orig_text, plag_text)
+    duplicate_rate = similarity * 100  # 转换为百分比
+
+    save_file_to_folder(output_file_path, duplicate_rate, plag_file_path)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 4:
+        print("用法: python main.py <原文文件路径> <抄袭文件路径> <输出文件路径>")
+# python main.py ./test_text_dataset/orig.txt ./test_text_dataset/orig_0.8_add.txt ./test_text_dataset/output_file.txt
+        sys.exit(1)
+
+    orig_file = sys.argv[1]
+    plag_file = sys.argv[2]
+    output_file = sys.argv[3]
+
+    main(orig_file, plag_file, output_file)
