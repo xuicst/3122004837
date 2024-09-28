@@ -24,10 +24,7 @@ def validate_answers(exercise_file, answer_file):
     for i, (exercise, answer) in enumerate(zip(exercises, answers), 1):
         exercise = re.sub(r'÷', '/', exercise)  # 将除号替换为Python可识别的除号
         exercise = re.sub(r'×', '*', exercise)
-        if '/' in exercise:
-            correct_answer = calculate_answer_2(exercise)
-        else:
-            correct_answer = calculate_answer_1(exercise)
+        correct_answer = format_fraction(calculate_answer(exercise))
 
         if correct_answer == answer.strip().split('. ')[1]:
             correct.append(i)
@@ -39,45 +36,58 @@ def validate_answers(exercise_file, answer_file):
         f.write(f"Wrong: {len(wrong)} ({', '.join(map(str, wrong))})\n")
 
 
-def calculate_answer_1(exercise):
+def calculate_answer(exercise):
     exercise = exercise.strip().split('. ')[1]  # 移除题号
-    numbers = re.findall(r'\d+', exercise)
-    operator = re.findall(r'[+\-*]', exercise)[0]
-
-    a = int(numbers[0])
-    b = int(numbers[1])
-
-    if operator == '+':
-        return str(format_fraction(a + b))
-    elif operator == '-':
-        return str(format_fraction(a - b))
-    elif operator == '*':
-        return str(format_fraction(a * b))
-
-
-def calculate_answer_2(exercise):
-    # 计算题目的正确答案
-    exercise = exercise.strip().split('. ')[1]  # 移除题号
-    exercise = re.sub(r'÷', '/', exercise)  # 替换运算符为Python可识别的形式
-    exercise = re.sub(r'×', '*', exercise)
 
     # 匹配分数或整数
     elements = re.findall(r'\d+/\d+|\d+', exercise)  # 匹配分数或整数
-    operators = re.findall(r'\s[/*+-]\s', exercise)  # 匹配运算符
+    operators = re.findall(r'\s[+\-*/]\s', exercise)  # 匹配运算符
 
     # 将匹配的数字或分数转换为 Fraction 对象
     fractions = [Fraction(e) for e in elements]
 
-    # 依次处理运算符
-    result = fractions[0]
-    for i, operator in enumerate(operators):
-        if operator == '+':
-            result += fractions[i + 1]
-        elif operator == '-':
-            result -= fractions[i + 1]
-        elif operator == '*':
-            result *= fractions[i + 1]
-        elif operator == '/':
-            result /= fractions[i + 1]
+    # 使用两个栈来处理运算符优先级
+    values = []
+    ops = []
 
-    return str(format_fraction(result))  # 返回格式化后的结果
+    for i in range(len(fractions)):
+        values.append(fractions[i])
+
+        if i < len(operators):
+            op = operators[i].strip()
+            while ops and precedence(op) <= precedence(ops[-1]):
+                # if len(values) < 2:  # 确保有足够的值进行运算
+                #     break
+                right = values.pop()
+                left = values.pop()
+                operator = ops.pop()
+                values.append(apply_operator(left, right, operator))
+            ops.append(op)
+
+    # 处理剩余的运算符
+    while ops:
+        right = values.pop()
+        left = values.pop()
+        operator = ops.pop()
+        values.append(apply_operator(left, right, operator))
+
+    return values[0]  # 返回格式化后的结果
+
+
+def precedence(op):
+    if op in ('+', '-'):
+        return 1
+    if op in ('*', '/'):
+        return 2
+    return 0
+
+
+def apply_operator(left, right, operator):
+    if operator == '+':
+        return left + right
+    elif operator == '-':
+        return left - right
+    elif operator == '*':
+        return left * right
+    elif operator == '/':
+        return left / right

@@ -30,19 +30,49 @@ def problem_eval(expression):
     fractions = [Fraction(e) for e in elements[0]]
     # print(fractions)
     
-    # 依次处理运算符
-    result = fractions[0]
-    for i, operator in enumerate(operators):
-        if operator == '+':
-            result += fractions[i+1]
-        elif operator == '-':
-            result -= fractions[i+1]
-        elif operator == '*':
-            result *= fractions[i+1]
-        elif operator == '/':
-            result /= fractions[i+1]
-    
-    return result
+    # 使用两个栈来处理运算符优先级
+    values = []
+    ops = []
+
+    for i in range(len(fractions)):
+        values.append(fractions[i])
+        
+        if i < len(operators):
+            op = operators[i].strip()
+            while (ops and precedence(op) <= precedence(ops[-1])):
+                right = values.pop()
+                left = values.pop()
+                operator = ops.pop()
+                values.append(apply_operator(left, right, operator))
+            ops.append(op)
+
+    # 处理剩余的运算符
+    while ops:
+        right = values.pop()
+        left = values.pop()
+        operator = ops.pop()
+        values.append(apply_operator(left, right, operator))
+
+    return values[0]
+
+
+def precedence(op):
+    if op in ('+', '-'):
+        return 1
+    if op in ('*', '/'):
+        return 2
+    return 0
+
+
+def apply_operator(left, right, operator):
+    if operator == '+':
+        return left + right
+    elif operator == '-':
+        return left - right
+    elif operator == '*':
+        return left * right
+    elif operator == '/':
+        return left / right
 
 
 def generate_problem(r):
@@ -73,16 +103,9 @@ def generate_problem(r):
         op = random.choice(list(operators.keys()))
         expression += f" {op} {terms[i + 1]}"
 
-    # # 将运算符替换为Python可识别的形式
-    # expression = expression.replace('×', '*').replace('÷', '/')
-
     # 计算结果
     try:
-        if re.search(r'/', expression):  # 如果表达式中有除数
-            result = problem_eval(expression) 
-        else:
-            result = eval(expression) 
-            result = Fraction(result)  # 确保结果为分数形式
+        result = problem_eval(expression) 
     except ZeroDivisionError:
         return generate_problem(r)  # 重新生成题目以避免除以零
 

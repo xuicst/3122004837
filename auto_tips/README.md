@@ -52,7 +52,3 @@
 `python main.py -n 30 -r 100`
 
 `python main.py -e Exercises.txt -a Answers.txt`
-
-或：
-
-`python main.py -n 30 -r 100 -e Exercises.txt -a Answers.txt`
