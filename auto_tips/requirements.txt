@@ -1,0 +1,5 @@
+lxml==5.2.1
+packaging==23.2
+PyQt5==5.15.10
+regex==2023.12.25
+requests==2.31.0

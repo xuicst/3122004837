@@ -2,7 +2,7 @@
 
 > 简要介绍见下方
 
-**实现一个自动生成小学四则运算题目的命令行程序**
+### **实现一个自动生成小学四则运算题目的命令行程序**
 
 * 使用 -n 参数控制生成题目的个数，例如：
   `Myapp.exe -n 10` 将生成10个题目。
@@ -33,7 +33,7 @@
 * 程序应能支持一万道题目的生成。
 * 程序支持对给定的题目文件和答案文件，判定答案中的对错并进行数量统计，输入参数如下：
 
-  `Myapp.exe -e <exercisefile>``.txt -a <answerfile>``.txt`
+  `Myapp.exe -e <exercisefile>.txt -a <answerfile>.txt`
 
   统计结果输出到文件Grade.txt，格式如下：
 
@@ -42,3 +42,17 @@
   Wrong: 5 (2, 4, 6, 8, 10)
 
 其中“:”后面的数字5表示对/错的题目的数量，括号内的是对/错题目的编号。为简单起见，假设输入的题目都是按照顺序编号的符合规范的题目。
+
+### 项目介绍
+
+主程序文件  `main.py`，算式生成与答案文件 `generator.py `，判定题目与答案生成文件 ` validator.py`
+
+命令行运行命令：
+
+`python main.py -n 30 -r 100`
+
+`python main.py -e Exercises.txt -a Answers.txt`
+
+或：
+
+`python main.py -n 30 -r 100 -e Exercises.txt -a Answers.txt`

@@ -1,4 +1,3 @@
-# main.py
 import argparse
 from generator import generate_problems_and_answers
 from validator import validate_answers
